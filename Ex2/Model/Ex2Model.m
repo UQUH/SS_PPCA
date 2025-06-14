@@ -1,5 +1,5 @@
 function [K,K_bc,f_vec,Phi,y_EXP,y_HDM_pert,y_ROM,V_global,n,k,...
-    y_EXP_no_noise,zeta,num_pertb] = Ex3Model
+    y_EXP_no_noise,zeta,num_pertb] = Ex2Model
 rng(1042); % Set Random Seed for Reproducibility  
 
 %% Define Parameters
@@ -32,14 +32,17 @@ phi_part = Phi(:, 2:6);  % Extract phi(:, 2) to phi(:, 6)
 mu_vec = [0.5, 0.5, 0.5, 0.5, 1]; % Coefficients for force components  
 
 % Compute force vector using basis functions  
-f_vec = phi_part * mu_vec';  
+g = phi_part * mu_vec';  
+% Normalize by maximum absolute value (scale invariant force)
+g_max = max(abs(g));
+f_vec = g / g_max;
 
 %% Compute Experimental Stiffness matrix  
 % Generate random noise vector  
 z = randn(1, n_int);  
 
 % Define error percentage  
-error_percent = 0.05;  
+error_percent = 0.15;  
 
 % Compute scaling factor for error  
 c = error_percent * (norm(lambda_k)) / norm(z .* lambda_k);  
@@ -48,21 +51,25 @@ c = error_percent * (norm(lambda_k)) / norm(z .* lambda_k);
 w = c * z;  
 lambda_error = w .* lambda_k;  
 
+lambda_exp = (lambda_k + lambda_error);
 % Compute perturbed stiffness matrix  
-K_error = Phi * diag(lambda_error) * Phi';  
-K_true = K + K_error;  
+% K_error = Phi * diag(lambda_error) * Phi';  
+% K_true = K + K_error;  
+K_true = Phi* diag(lambda_exp) *Phi';
 K_true_bc = K_true(2:end-1,2:end-1);
 
 %% Compute Experimental Displacement  
-% Solve system for unperturbed experimental displacement  
+% Solve system for unperturbed experimental displacement
+noise_level = 0.05;
 y_EXP_no_noise = zeros(n,1);
 y_EXP_no_noise(2:end-1) = K_true_bc \ f_vec(2:end-1);  
 
 % Compute standard deviation of displacement  
 y_std = std(y_EXP_no_noise);  
 
+%y_error = zeros(n,1);
 % Generate random noise for experimental error  
-y_error = error_percent * y_std * randn(1000, 1);  
+y_error = noise_level * y_std * randn(n, 1);  
 
 % Add noise to displacement to obtain experimental data  
 y_EXP = y_EXP_no_noise + y_error;  
@@ -72,18 +79,41 @@ num_pertb = 100; % Number of perturbation realizations
 y_HDM_pert = zeros(n, num_pertb); % Preallocate perturbed displacement matrix  
 
 for i = 1:num_pertb  
-    % Generate random perturbation scaled by error percentage  
-    error_HDM = 5 * error_percent * randn(1, n_int);  
-    
+    % % Generate random perturbation scaled by error percentage  
+    error_HDM = 2.25* error_percent * randn(1, n_int);  
+
     % Apply perturbation to eigenvalues  
     lambda_error_pert = lambda_k .* (1 + error_HDM);  
-    
-    % Construct perturbed stiffness matrix  
-    K_pert = Phi * diag(lambda_error_pert) * Phi';  
+
+    % if any(lambda_error_pert <= 0)
+    %     fprintf('lambda is negative')
+    % end
+    % Construct perturbed stiffness matrix
+    K_pert = Phi * diag(lambda_error_pert) * Phi';
     K_pert_bc = K_pert(2:end-1,2:end-1);
-    
+
+    % z = randn(1,n_int);
+    % 
+    % % Compute scaling factor for error
+    % c = 2.3*error_percent * (norm(lambda_k)) / norm(z .* lambda_k);
+    % 
+    % % Compute perturbation in eigenvalues
+    % w = c * z;
+    % lambda_error = w .* lambda_k;
+    % 
+    % lambda_pert = (lambda_k + lambda_error);
+
+    % % Compute perturbed stiffness matrix
+    % K_error_pert = Phi * diag(lambda_error) * Phi';
+    % % K_pert = K + K_error_pert;
+    % K_pert = Phi * diag(lambda_pert) * Phi';
+    % K_pert_bc = K_pert(2:end-1,2:end-1);
+    % 
+    % z = randn(size(mu_vec));
+    % f_error = 0.15 * (phi_part * (mu_vec .* z)') / g_max;
+    % f_pert = f_vec(2:end-1) + f_pert(2:end-1);
     % Solve system for perturbed HDM displacement  
-    y_HDM_pert(2:end-1, i) = K_pert_bc \ f_vec(2:end-1);  
+    y_HDM_pert(2:end-1, i) = K_pert_bc \ f_vec(2:end-1) ;  
 end  
 
 %% Compute Reduced-Order Model (ROM) Displacement  
