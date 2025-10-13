@@ -42,14 +42,12 @@ Each example (`Ex1`, `Ex2`) contains a separate `model` folder and method folder
 If you found SS-PPCA helpful, please cite the [following
 paper](https://arxiv.org/abs/2504.19963):
 ```
-@misc{yadav2025ssppca,
-      title={Stochastic Subspace via Probabilistic Principal Component Analysis for Characterizing Model Error}, 
-      author={Akash Yadav and Ruda Zhang},
-      year={2025},
-      eprint={2504.19963},
-      archivePrefix={arXiv},
-      primaryClass={cs.CE},
-      url={https://arxiv.org/abs/2504.19963}, 
+@Article{yadav2025ss,
+  author  = {Akash Yadav and Ruda Zhang},
+  journal = {Computational Mechanics},
+  title   = {Stochastic Subspace via Probabilistic Principal Component Analysis for Characterizing Model Error},
+  year    = {2025},
+  doi     = {10.1007/s00466-025-02701-6},
 }
 ```
 
